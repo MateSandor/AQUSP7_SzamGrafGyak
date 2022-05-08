@@ -1,0 +1,13 @@
+# Blender MTL File: 'None'
+# Material Count: 1
+
+newmtl FW_190
+Ns 10.000005
+Ka 1.000000 1.000000 1.000000
+Kd 1.000000 1.000000 1.000000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 1
+map_Kd C:\\Users\\x\\Downloads\\WWII_Plane-Germany_Focke-Wulf_Fw_190_v1_47f9b845-db8f-4554-9a0e-b0fcb48fced6\\14081_WWII_Plane-Germany_Focke-Wulf_Fw_190_Diff.jpg
