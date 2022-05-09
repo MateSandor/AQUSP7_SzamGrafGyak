@@ -32,6 +32,7 @@ Késői kezdésért elnézést kérek, magánéleti problémák adóttak. Remél
 | ------------- | ------------- |
 | W , A , S , D , SPACE , SHIFT| Kamera pozíciójának az irányítása |
 | MOUSE | Kamera irányának állítása |
+| ARROWS | Repülő irányítása |
 | 1 , 2  | Fényerő állítása |
 | 0 | Játék alapállapotba állítása |
 | V  | Kamera visszapozicionálása a repülőgép mögé |
