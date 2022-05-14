@@ -5,16 +5,8 @@
 #include <obj/draw.h>
 #include <math.h>
 
-void init_scene(Scene* scene)
-{
+void init_scene(Scene *scene) {
     //Modellek - textúrák betöltése
-    load_model(&(scene->plane), "assets/models/plane_body.obj");
-    scene->planeTexture = load_texture("assets/textures/plane.jpg");
-
-    load_model(&(scene->window), "assets/models/window.obj");
-
-    load_model(&(scene->rotor), "assets/models/rotor.obj");
-
     scene->skyTexture = load_texture("assets/textures/sky.jpg");
 
     load_model(&(scene->checkpointModel), "assets/models/checkpoint.obj");
@@ -32,6 +24,8 @@ void init_scene(Scene* scene)
         currentPosition = scene->checkpoint[i].position.x + (rand() % (100 + 1 - 50) + 50);
         scene->checkpoint[i].position.y = rand() % 50 - 20;
         scene->checkpoint[i].position.z = 0.0;
+        scene->checkpoint[i].rotation.z = 0.0;
+        scene->checkpoint[i].collided = false;
     }
 
     //Inicializációs értékek
@@ -49,24 +43,6 @@ void init_scene(Scene* scene)
 
     scene->material.shininess = 0.0;
 
-    scene->planePosition.x = 0.0;
-    scene->planePosition.y = 0.0;
-    scene->planePosition.z = 0.0;
-
-    scene->planeSpeed.x = 0.0;
-    scene->planeSpeed.y = 0.0;
-    scene->planeSpeed.z = 0.0;
-
-    scene->planeRotation.x = 0.0;
-    scene->planeRotation.y = 0.0;
-    scene->planeRotation.z = 0.0;
-
-    scene->planeRotationSpeed = 0.0;
-
-    scene->rotorRotation.x = 0.0;
-
-    scene->rotorSpeed = 0.0;
-
     scene->controlOn = false;
 
     scene->diffuse[0] = 1.0f;
@@ -77,8 +53,7 @@ void init_scene(Scene* scene)
     scene->brightness = 0.0f;
 }
 
-void set_lighting(Scene *scene)
-{
+void set_lighting(Scene *scene) {
     //Elsődleges fényforrás
     float ambient_light[] = {0.0f, 0.0f, 0.0f, 1.0};
     float diffuse_light[] = {scene->diffuse[0], scene->diffuse[1], scene->diffuse[2], 1.0f};
@@ -91,8 +66,7 @@ void set_lighting(Scene *scene)
     glLightfv(GL_LIGHT0, GL_POSITION, position);
 }
 
-void set_lighting2(Scene *scene)
-{
+void set_lighting2(Scene *scene) {
     //Másodlagos fényforrás, jelen pillanatban kikapcsolva, tesztelgetve volt
     glEnable(GL_LIGHT1);
     //float ambient_light[] = {1.5f, 1.5f, 1.5f, 1.0};
@@ -106,24 +80,23 @@ void set_lighting2(Scene *scene)
     glLightfv(GL_LIGHT1, GL_POSITION, position);
 }
 
-void set_material(const Material* material)
-{
+void set_material(const Material *material) {
     float ambient_material_color[] = {
-        material->ambient.red,
-        material->ambient.green,
-        material->ambient.blue
+            material->ambient.red,
+            material->ambient.green,
+            material->ambient.blue
     };
 
     float diffuse_material_color[] = {
-        material->diffuse.red,
-        material->diffuse.green,
-        material->diffuse.blue
+            material->diffuse.red,
+            material->diffuse.green,
+            material->diffuse.blue
     };
 
     float specular_material_color[] = {
-        material->specular.red,
-        material->specular.green,
-        material->specular.blue
+            material->specular.red,
+            material->specular.green,
+            material->specular.blue
     };
 
     glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, ambient_material_color);
@@ -133,24 +106,7 @@ void set_material(const Material* material)
     glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, &(material->shininess));
 }
 
-void update_scene(Scene* scene, Camera *camera, double time) {
-    //A repülő x-y-z koordinátán történő mozgásának a frissítése
-    scene->planePosition.x += scene->planeSpeed.x * time;
-    scene->planePosition.y += scene->planeSpeed.y * time;
-    scene->planePosition.z += scene->planeSpeed.z * time;
-
-    //A kamera kövesse a repülő mozgását
-    camera->position.x += scene->planeSpeed.x * time;
-    camera->position.y += scene->planeSpeed.y * time;
-    camera->position.z += scene->planeSpeed.z * time;
-
-    //A repülő x-y-z koordinátán történő forgatásának a frissítése
-    scene->planeRotation.x += scene->planeRotationSpeed * time;
-    scene->planeRotation.y += scene->planeRotationSpeed * time;
-    scene->planeRotation.z += scene->planeRotationSpeed * time;
-
-    scene->rotorRotation.x += 50;
-
+void update_scene(Scene *scene, Plane *plane, Camera *camera, double time) {
     //Diffúz fények állítása
     scene->diffuse[0] += scene->brightness * time;
     scene->diffuse[1] += scene->brightness * time;
@@ -159,30 +115,41 @@ void update_scene(Scene* scene, Camera *camera, double time) {
 
     //Checkpointok ütközésvizsgálata
     //Amikor hozzáérünk egy checkpointhoz az adott intervallumban, akkor 100 egységgel feljebb kerül
-    for(int i=0; i<12; i++){
-        if(scene->checkpoint[i].position.y + 10 >= scene->planePosition.y && scene->planePosition.y + 6 >= scene->checkpoint[i].position.y
-        && scene->checkpoint[i].position.x + 3 >= scene->planePosition.x && scene->planePosition.x + 10 >= scene->checkpoint[i].position.x){
+    for (int i = 0; i < 12; i++) {
+        if (scene->checkpoint[i].position.y + 10 >= plane->planePosition.y &&
+            plane->planePosition.y + 6 >= scene->checkpoint[i].position.y
+            && scene->checkpoint[i].position.x + 3 >= plane->planePosition.x &&
+            plane->planePosition.x + 10 >= scene->checkpoint[i].position.x) {
             scene->checkpoint[i].position.z += 100 * time;
+            scene->checkpoint[i].collided = true;
+        }
+    }
+
+    for (int i = 0; i < 12; i++) {
+        if (scene->checkpoint[i].collided) {
+            scene->checkpoint[i].rotation.z += 20;
         }
     }
 
     //Amikor elértünk az utolsó checkpoint vonalába, akkor újraindul a játék
-    if(scene->planePosition.x >= scene->checkpoint[11].position.x){
-        scene->planePosition.x = 0.0f;
-        scene->planePosition.y = 0.0f;
-        scene->planePosition.z = 0.0f;
-        scene->planeSpeed.x = 0.0f;
-        camera->position.x = -5.0;
+    if (plane->planePosition.x >= scene->checkpoint[11].position.x) {
+        plane->planePosition.x = 0.0f;
+        plane->planePosition.y = 0.0f;
+        plane->planePosition.z = 0.0f;
+        plane->planeSpeed.x = 0.0f;
+        camera->position.x = -7.5;
         camera->position.y = 0.0;
         camera->position.z = 2.0;
-        for(int i=0; i<12; i++){
+        for (int i = 0; i < 12; i++) {
             scene->checkpoint[i].position.z = 0.0;
+            scene->checkpoint[i].rotation.z = 0.0;
+            scene->checkpoint[i].collided = false;
         }
     }
 }
 
-void render_scene(const Scene* scene)
-{
+void render_scene(const Scene *scene) {
+
     //Fények és anyag renderelése
     set_material(&(scene->material));
     set_lighting(scene);
@@ -190,77 +157,56 @@ void render_scene(const Scene* scene)
 
     //Hegy renderelése
     //Kellett egyet scale-elni, hogy nagyobb legyen, mert a Blender valamiért elsötétítette az egész képet
+    renderMountain(scene);
+
+    //Skybox renderelése
+    renderSkybox(scene);
+
+    //Checkpointok renderelése
+    renderCheckpoint(scene);
+
+    //Control képernyőre rajzolása állapottól függően
+    if (scene->controlOn) {
+        loadControl(scene->controlTexture);
+    }
+}
+
+void renderMountain(const Scene *scene) {
     glPushMatrix();
     glScalef(30.0f, 30.0f, 10.0f);
     glTranslatef(0, 0, -300);
     glBindTexture(GL_TEXTURE_2D, scene->mountainTexture);
     draw_model(&(scene->mountain));
     glPopMatrix();
+}
 
-    //Skybox renderelése
+void renderSkybox(const Scene *scene) {
     glPushMatrix();
-	glRotatef(180,0,0,1);
+    glRotatef(180, 0, 0, 1);
     glBindTexture(GL_TEXTURE_2D, scene->skyTexture);
     loadSkybox(*scene);
     glPopMatrix();
-
-    /* Repülő renderelése
-     * Külső push-pop mátrixban megadva, hogy a repülő egyes részei milyen irányokat (glTranslatef)
-     * és forgást (glRotatef) kövessenek egységesen.
-     * A belső push-pop mátrixokban a repülő egyes részei renderelődnek le.*/
-    glPushMatrix();
-    glTranslatef(scene->planePosition.x, scene->planePosition.y, scene->planePosition.z);
-    glRotatef(scene->planeRotation.x, 1, 0, 0);
-    glTranslatef(-scene->planePosition.x, -scene->planePosition.y, -scene->planePosition.z);
-
-    glPushMatrix();
-    glTranslatef(scene->planePosition.x, scene->planePosition.y, scene->planePosition.z);
-    glBindTexture(GL_TEXTURE_2D, scene->planeTexture);
-    draw_model(&(scene->plane));
-    glPopMatrix();
-
-    glPushMatrix();
-    glTranslatef(scene->planePosition.x+2.2, scene->planePosition.y, scene->planePosition.z);
-    glRotatef(scene->rotorRotation.x, 1, 0, 0);
-    glBindTexture(GL_TEXTURE_2D, scene->planeTexture);
-    draw_model(&(scene->rotor));
-    glPopMatrix();
-
-    //A repülő ablakának átlátszóságának beállítása
-    glPushMatrix();
-    glEnable(GL_BLEND);
-    glDepthMask(GL_FALSE);
-    glBlendFunc(GL_SRC_ALPHA+4, GL_ONE_MINUS_SRC_ALPHA-3);
-    glTranslatef(scene->planePosition.x, scene->planePosition.y, scene->planePosition.z);
-    draw_model(&(scene->window));
-    glDepthMask(GL_TRUE);
-    glDisable(GL_BLEND);
-    glPopMatrix();
-    glPopMatrix();
-
-    //Checkpointok renderelése
-    renderCheckpoint(scene);
-
-    //Control képernyőre rajzolása állapottól függően
-    if(scene->controlOn){
-        loadControl(scene->controlTexture);
-    }
 }
 
 void renderCheckpoint(const Scene *scene) {
     //Azért vannak 90 fokkal rotate-elve, mert alapból nem szemben lennének
     for (int i = 0; i < 12; i++) {
         glPushMatrix();
+        glEnable(GL_BLEND);
+        glDepthMask(GL_FALSE);
+        glBlendFunc(GL_SRC_ALPHA + 1, GL_ONE_MINUS_SRC_ALPHA);
         glTranslatef(scene->checkpoint[i].position.x, scene->checkpoint[i].position.y, scene->checkpoint[i].position.z);
         glRotatef(90, 0, 0, 1);
-        glBindTexture(GL_TEXTURE_2D, scene->checkpoint[i].texture);
+        glRotatef(scene->checkpoint[i].rotation.z, 0, 0, 1);
+        //glBindTexture(GL_TEXTURE_2D, scene->checkpoint[i].texture);
         draw_model(&(scene->checkpointModel));
+        glDepthMask(GL_TRUE);
+        glDisable(GL_BLEND);
         glPopMatrix();
     }
 }
 
-void draw_origin()
-{
+void draw_origin() {
     glBegin(GL_LINES);
 
     glColor3f(1, 0, 0);
@@ -288,7 +234,7 @@ void loadSkybox(Scene scene) {
     int i, k;
     n_slices = 60;
     n_stacks = 60;
-    radius = 10000;
+    radius = 5000;
 
     glPushMatrix();
 
@@ -324,24 +270,8 @@ void loadSkybox(Scene scene) {
     glPopMatrix();
 }
 
-void set_plane_speed_x(Scene *scene, double speed){
-    scene->planeSpeed.x = speed;
-}
-
-void set_plane_speed_y(Scene *scene, double speed){
-    scene->planeSpeed.y = speed;
-}
-
-void set_plane_speed_z(Scene *scene, double speed){
-    scene->planeSpeed.z = speed;
-}
-
-void set_plane_rotation_speed(Scene *scene, double speed){
-    scene->planeRotationSpeed = speed;
-}
-
 void loadControl(GLuint control) {
-    //glDisable(GL_CULL_FACE);
+    glDisable(GL_CULL_FACE);
     glDisable(GL_LIGHTING);
     glDisable(GL_DEPTH_TEST);
     glEnable(GL_COLOR_MATERIAL);
@@ -369,13 +299,13 @@ void loadControl(GLuint control) {
     glDisable(GL_COLOR_MATERIAL);
     glEnable(GL_LIGHTING);
     glEnable(GL_DEPTH_TEST);
-    //glEnable(GL_CULL_FACE);
+    glEnable(GL_CULL_FACE);
 }
 
-void setControlState(Scene *scene, bool state){
+void setControlState(Scene *scene, bool state) {
     scene->controlOn = state;
 }
 
-void setBrightness(Scene *scene, double brightness){
+void setBrightness(Scene *scene, double brightness) {
     scene->brightness = brightness;
 }

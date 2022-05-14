@@ -4,13 +4,12 @@
 
 #include <math.h>
 
-void init_camera(Camera* camera)
-{
-    camera->position.x = -5.0;
+void init_camera(Camera *camera) {
+    camera->position.x = -7.5;
     camera->position.y = 0.0;
     camera->position.z = 2.0;
     camera->rotation.x = 0.0;
-    camera->rotation.y = 0.0;
+    camera->rotation.y = -8.0;
     camera->rotation.z = 0.0;
     camera->speed.x = 0.0;
     camera->speed.y = 0.0;
@@ -19,8 +18,7 @@ void init_camera(Camera* camera)
     camera->is_preview_visible = false;
 }
 
-void update_camera(Camera* camera, double time)
-{
+void update_camera(Camera *camera, double time) {
     double angle;
     double side_angle;
 
@@ -34,8 +32,7 @@ void update_camera(Camera* camera, double time)
     camera->position.z += camera->speed.z * time;
 }
 
-void set_view(const Camera* camera)
-{
+void set_view(const Camera *camera) {
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
@@ -44,8 +41,7 @@ void set_view(const Camera* camera)
     glTranslatef(-camera->position.x, -camera->position.y, -camera->position.z);
 }
 
-void rotate_camera(Camera* camera, double horizontal, double vertical)
-{
+void rotate_camera(Camera *camera, double horizontal, double vertical) {
     camera->rotation.z += horizontal;
     camera->rotation.x += vertical;
 
@@ -66,18 +62,15 @@ void rotate_camera(Camera* camera, double horizontal, double vertical)
     }
 }
 
-void set_camera_speed(Camera* camera, double speed)
-{
+void set_camera_speed(Camera *camera, double speed) {
     camera->speed.y = speed;
 }
 
-void set_camera_side_speed(Camera* camera, double speed)
-{
+void set_camera_side_speed(Camera *camera, double speed) {
     camera->speed.x = speed;
 }
 
-void show_texture_preview()
-{
+void show_texture_preview() {
     glDisable(GL_LIGHTING);
     glDisable(GL_DEPTH_TEST);
     glEnable(GL_COLOR_MATERIAL);
@@ -103,6 +96,6 @@ void show_texture_preview()
     glEnable(GL_DEPTH_TEST);
 }
 
-void set_camera_speed_z(Camera* camera, double speed){
+void set_camera_speed_z(Camera *camera, double speed) {
     camera->speed.z = speed;
 }

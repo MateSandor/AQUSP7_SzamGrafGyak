@@ -5,8 +5,7 @@
 /**
  * Main function
  */
-int main(int argc, char* argv[])
-{
+int main(int argc, char *argv[]) {
     App app;
 
     init_app(&app, 1300, 700);

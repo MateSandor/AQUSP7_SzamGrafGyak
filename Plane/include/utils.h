@@ -4,8 +4,7 @@
 /**
  * GLSL-like three dimensional vector
  */
-typedef struct vec3
-{
+typedef struct vec3 {
     float x;
     float y;
     float z;
@@ -14,8 +13,7 @@ typedef struct vec3
 /**
  * Color with RGB components
  */
-typedef struct Color
-{
+typedef struct Color {
     float red;
     float green;
     float blue;
@@ -24,8 +22,7 @@ typedef struct Color
 /**
  * Material
  */
-typedef struct Material
-{
+typedef struct Material {
     struct Color ambient;
     struct Color diffuse;
     struct Color specular;
